@@ -16,6 +16,7 @@ namespace Company.Function
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)]HttpRequest req, 
             [EventHub("deloittedemoeventhub", Connection = "EventHubConnectionString")] ICollector<Order> outputEventHubMessages,
+            [Table("Order", Connection = "AzureWebJobsDashboard")] ICollector<Order> outTable,
             TraceWriter log)
         {
             log.Info("C# HTTP trigger function processed a request.");
@@ -26,7 +27,10 @@ namespace Company.Function
             dynamic data = JsonConvert.DeserializeObject(requestBody);
             name = name ?? data?.name;
 
-            outputEventHubMessages.Add(new Order{ PizzaType = data?.pizzaType, Amount = data?.amount });
+            var order = new Order{ PizzaType = data?.pizzaType, Amount = data?.amount, PartitionKey = "Functions", RowKey = System.Guid.NewGuid().ToString() };
+
+            outputEventHubMessages.Add(order);
+            outTable.Add(order);
 
             return name != null
                 ? (ActionResult)new OkObjectResult($"Hello, {name}")
