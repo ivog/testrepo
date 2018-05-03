@@ -15,7 +15,7 @@ namespace Company.Function
         [FunctionName("HttpTrigger")]
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)]HttpRequest req, 
-            [EventHub("deloittedemoeventhub", Connection = "EventHubConnectionString")] IAsyncCollector<string> outputEventHubMessages,
+            [EventHub("deloittedemoeventhub", Connection = "EventHubConnectionString")] ICollector<Order> outputEventHubMessages,
             TraceWriter log)
         {
             log.Info("C# HTTP trigger function processed a request.");
@@ -26,7 +26,7 @@ namespace Company.Function
             dynamic data = JsonConvert.DeserializeObject(requestBody);
             name = name ?? data?.name;
 
-
+            outputEventHubMessages.Add(new Order{ PizzaType = data?.pizzaType, Amount = data?.amount });
 
             return name != null
                 ? (ActionResult)new OkObjectResult($"Hello, {name}")
